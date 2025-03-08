@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Purchase Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f0f5; }
+        .navbar { background-color: #333; padding: 15px; text-align: center; }
+        .navbar a { color: white; padding: 14px 20px; text-decoration: none; display: inline-block; cursor: pointer; }
+        .navbar a:hover { background-color: #575757; }
+        .container { max-width: 900px; margin: auto; text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); margin-top: 20px; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #007bff; color: white; }
+        input, button { margin: 5px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background-color: #007bff; color: white; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #summary, #average-spent, #most-popular-product { font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a onclick="showTab('home')">Home</a>
+        <a onclick="showTab('purchase')">Purchase Data</a>
+        <a onclick="showTab('reports')">Reports</a>
+        <a onclick="showTab('settings')">Settings</a>
+    </div>
+    
+    <div id="home" class="container" style="display: block;">
+        <h2>Welcome to Customer Purchase Analysis</h2>
+        <p>Navigate using the menu to analyze customer behavior.</p>
+    </div>
+    
+    <div id="purchase" class="container">
+        <h2>Customer Purchase Behavior Analysis</h2>
+        <input type="text" id="customer" placeholder="Customer Name">
+        <input type="text" id="product" placeholder="Product Name">
+        <input type="number" id="amount" placeholder="Amount">
+        <button onclick="addPurchase()">Add Purchase</button>
+        <button onclick="analyzeData()">Analyze Purchases</button>
+        <button onclick="refreshData()">Refresh Data</button>
+        <table id="purchaseTable">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Amount ($)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <div id="reports" class="container">
+        <h2>Reports</h2>
+        <h3 id="summary"></h3>
+        <h3 id="average-spent"></h3>
+        <h3 id="most-popular-product"></h3>
+    </div>
+    
+    <div id="settings" class="container">
+        <h2>Settings</h2>
+        <p>Feature under development.</p>
+    </div>
+    
+    <script>
+        let purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+        
+        function showTab(tabId) {
+            document.querySelectorAll(".container").forEach(tab => tab.style.display = "none");
+            document.getElementById(tabId).style.display = "block";
+        }
+
+        function addPurchase() {
+            const customer = document.getElementById("customer").value;
+            const product = document.getElementById("product").value;
+            const amount = parseFloat(document.getElementById("amount").value);
+            
+            if (customer && product && !isNaN(amount) && amount > 0) {
+                purchases.push({ customer, product, amount });
+                localStorage.setItem("purchases", JSON.stringify(purchases));
+                analyzeData();
+            }
+        }
+
+        function analyzeData() {
+            const tableBody = document.querySelector("#purchaseTable tbody");
+            tableBody.innerHTML = "";
+            
+            let totalSpent = {};
+            let productCount = {};
+            let totalAmount = 0;
+            
+            purchases.forEach(purchase => {
+                const row = `<tr><td>${purchase.customer}</td><td>${purchase.product}</td><td>$${purchase.amount}</td></tr>`;
+                tableBody.innerHTML += row;
+                
+                if (!totalSpent[purchase.customer]) {
+                    totalSpent[purchase.customer] = 0;
+                }
+                totalSpent[purchase.customer] += purchase.amount;
+                
+                if (!productCount[purchase.product]) {
+                    productCount[purchase.product] = 0;
+                }
+                productCount[purchase.product] += 1;
+                
+                totalAmount += purchase.amount;
+            });
+            
+            if (purchases.length > 0) {
+                let highestSpender = Object.keys(totalSpent).reduce((a, b) => totalSpent[a] > totalSpent[b] ? a : b);
+                document.getElementById("summary").innerText = `Highest spender: ${highestSpender} ($${totalSpent[highestSpender]})`;
+                
+                let averageSpent = (totalAmount / purchases.length).toFixed(2);
+                document.getElementById("average-spent").innerText = `Average spent per purchase: $${averageSpent}`;
+                
+                let mostPopularProduct = Object.keys(productCount).reduce((a, b) => productCount[a] > productCount[b] ? a : b);
+                document.getElementById("most-popular-product").innerText = `Most popular product: ${mostPopularProduct} (${productCount[mostPopularProduct]} purchases)`;
+            } else {
+                document.getElementById("summary").innerText = "No purchases recorded.";
+                document.getElementById("average-spent").innerText = "";
+                document.getElementById("most-popular-product").innerText = "";
+            }
+        }
+
+        function refreshData() {
+            localStorage.removeItem("purchases");
+            purchases = [];
+            analyzeData();
+        }
+    </script>
+</body>
+</html>
